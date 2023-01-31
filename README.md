@@ -1,3 +1,3 @@
-# Droid
+# droid
 
-> Inspired from <https://github.com/Anmol1696/shuttle/tree/main/docker/exposer>
+A custom controller for monitoring health and state of a Cosmos blockchain node.
