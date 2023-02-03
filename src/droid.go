@@ -7,12 +7,20 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/spf13/viper"
 )
 
-const (
-	statusURL = "http://0.0.0.0:26657/status"
-	epochURL  = "http://0.0.0.0:1317/osmosis/epochs/v1beta1/epochs"
+var (
+	config    Config
+	statusURL = config.RPCEndpoint + "/status"
+	epochURL  = config.LCDEndpoint + "/osmosis/epochs/v1beta1/epochs"
 )
+
+type Config struct {
+	RPCEndpoint string `mapstructure:"RPC_ENDPOINT"`
+	LCDEndpoint string `mapstructure:"LCD_ENDPOINT"`
+}
 
 type NodeStatus struct {
 	Result Result `json:"result"`
@@ -57,8 +65,7 @@ type Block struct {
 	Time   time.Time `json:"time"`
 }
 
-func getNodeStatus() NodeStatus {
-
+func GetNodeStatus(statusURL string) NodeStatus {
 	resp, err := http.Get(statusURL)
 	if err != nil {
 		log.Fatalln(err)
@@ -85,7 +92,7 @@ func getLatestBlockFromNodeStatus(status NodeStatus) Block {
 // /block handler
 func getLatestBlockHandler(w http.ResponseWriter, r *http.Request) {
 
-	status := getNodeStatus()
+	status := GetNodeStatus(statusURL)
 	latestBlock := getLatestBlockFromNodeStatus(status)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -101,7 +108,7 @@ func getLatestBlockHandler(w http.ResponseWriter, r *http.Request) {
 // /height handler
 func getLatestBlockHeightHandler(w http.ResponseWriter, r *http.Request) {
 
-	status := getNodeStatus()
+	status := GetNodeStatus(statusURL)
 	latestBlock := getLatestBlockFromNodeStatus(status)
 	_, _ = io.WriteString(w, latestBlock.Height)
 }
@@ -109,13 +116,13 @@ func getLatestBlockHeightHandler(w http.ResponseWriter, r *http.Request) {
 // /node_id handler
 func getNodeIDHandler(w http.ResponseWriter, r *http.Request) {
 
-	status := getNodeStatus()
+	status := GetNodeStatus(statusURL)
 	_, _ = io.WriteString(w, status.Result.NodeInfo.ID)
 }
 
 // /pub_key handler
 func getPubKeyHandler(w http.ResponseWriter, r *http.Request) {
-	status := getNodeStatus()
+	status := GetNodeStatus(statusURL)
 
 	response := map[string]string{
 		"@type": "/cosmos.crypto.ed25519.PubKey",
@@ -206,7 +213,7 @@ func isWithinEpoch(currentTime time.Time) bool {
 // /health handler
 func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 
-	status := getNodeStatus()
+	status := GetNodeStatus(statusURL)
 	latestBlock := getLatestBlockFromNodeStatus(status)
 
 	catchingUp := status.Result.SyncInfo.CatchingUp
@@ -231,10 +238,37 @@ func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = io.WriteString(w, fmt.Sprintf("%s\nLatest Block %s (Received %d seconds ago)\n", healthMessage, latestBlock.Height, secondsSinceLastBlock))
 }
 
-func main() {
+func setNodeEndpoints() error {
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath("./")
+	err := viper.ReadInConfig()
+	if err != nil {
+		return err
+	}
 
-	fmt.Println("[ 🤖 droid starting ]\n")
-	fmt.Printf("listening on port %d...", 8080)
+	configUnmarshalled := Config{}
+	err = viper.Unmarshal(&configUnmarshalled)
+	if err != nil {
+		return err
+	}
+	config = configUnmarshalled
+	return nil
+}
+
+func main() {
+	fmt.Println("[ 🤖 droid starting ]")
+
+	// set config & endpoints
+	fmt.Println("setting node endpoints...")
+	err := setNodeEndpoints()
+	if err != nil {
+		panic("end points config are not set correctly")
+	}
+	fmt.Println("RPC end point: ", config.RPCEndpoint)
+	fmt.Println("LCD end point: ", config.LCDEndpoint)
+
+	fmt.Printf("listening on port %d...\n", 8080)
 
 	http.HandleFunc("/node_id", getNodeIDHandler)
 	http.HandleFunc("/pub_key", getPubKeyHandler)
@@ -242,7 +276,7 @@ func main() {
 	http.HandleFunc("/height", getLatestBlockHeightHandler)
 	http.HandleFunc("/health", healthcheckHandler)
 
-	err := http.ListenAndServe(":8080", nil)
+	err = http.ListenAndServe(":8080", nil)
 	if err != nil {
 		log.Fatalf("Fail to start server, %s\n", err)
 	}
