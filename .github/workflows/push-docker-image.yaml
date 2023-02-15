@@ -39,6 +39,5 @@ jobs:
         push: true
         platforms: linux/amd64
         tags: |
-          ${{ env.DOCKER_IMAGE_REPOSITORY }}:${{ github.ref_name }}-${SHORT_SHA}-$(date +%s)
           ${{ env.DOCKER_IMAGE_REPOSITORY }}:${{ github.ref_name }}-${SHORT_SHA}
           ${{ env.DOCKER_IMAGE_REPOSITORY }}:${{ github.ref_name }}-latest
