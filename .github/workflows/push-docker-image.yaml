@@ -1,0 +1,41 @@
+name: Build Docker Image
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  DOCKER_IMAGE_REPOSITORY: osmolabs/droid
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - 
+      name: Checkout code
+      uses: actions/checkout@v3
+    - 
+      name: Compute short sha
+      run:  |
+        SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-8)
+        echo "SHORT_SHA=${SHORT_SHA} >> $GITHUB_ENV
+    - 
+      name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    - 
+      name: Build and Push Docker Images
+      uses: docker/build-push-action@v3
+      with:
+        file: Dockerfile
+        context: .
+        push: true
+        platforms: linux/amd64
+        username: ${{ env.DOCKER_USERNAME }}
+        password: ${{ env.DOCKER_PASSWORD }}
+        tags: |
+          ${{ env.DOCKER_IMAGE_REPOSITORY }}:${{ github.ref_name }}-${SHORT_SHA}-$(date +%s)
+          ${{ env.DOCKER_IMAGE_REPOSITORY }}:${{ github.ref_name }}-${SHORT_SHA}
+          ${{ env.DOCKER_IMAGE_REPOSITORY }}:${{ github.ref_name }}-latest
