@@ -1,0 +1,25 @@
+version: "3"
+
+services:
+
+  osmosisd:
+    image: osmolabs/osmosis:14.0.1-alpine
+    volumes:
+      - ./scripts/setup.sh:/osmosis/setup.sh
+      - $HOME/.osmosisd-local/:/osmosis/.osmosisd/
+    entrypoint:
+      - /osmosis/setup.sh
+    ports:
+      - 26657:26657
+      - 1317:1317
+      - 9090:9090
+      - 9091:9091
+  
+  droid:
+    build: ../../
+    ports:
+      - "8080:8080"
+    environment:
+      RPC_ENDPOINT: "http://osmosisd:26657"
+      LCD_ENDPOINT: "http://osmosisd:1317"
+
