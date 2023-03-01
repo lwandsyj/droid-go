@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -210,17 +209,9 @@ func readConfig() error {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			config = DefaultConfig()
 
-			f, err := os.Create(filepath.Join(viper.GetString("config_dir"), "config.yaml"))
-			if err != nil {
+			if err := viper.WriteConfigAs(filepath.Join(viper.GetString("config_dir"), "config.yaml")); err != nil {
 				return err
 			}
-
-			defer f.Close()
-
-			if err := viper.WriteConfigAs(viper.ConfigFileUsed()); err != nil {
-				return err
-			}
-
 		} else {
 			return err
 		}
@@ -241,8 +232,8 @@ func main() {
 	if err := readConfig(); err != nil {
 		log.Fatalf("Error reading configuration: %s", err)
 	}
-	log.Infof("\tRPC: %s", config.RPCEndpoint)
-	log.Infof("\tLCD: %s", config.LCDEndpoint)
+	log.Infof("RPC: %s", config.RPCEndpoint)
+	log.Infof("LCD: %s", config.LCDEndpoint)
 
 	log.Infof("Listening on port %s...", ":8080")
 
