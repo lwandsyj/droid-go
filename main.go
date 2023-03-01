@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -66,6 +66,8 @@ type Block struct {
 	Height string    `json:"height"`
 	Time   time.Time `json:"time"`
 }
+
+var log = logrus.New()
 
 func GetNodeStatus(statusURL string) NodeStatus {
 	resp, err := http.Get(statusURL)
@@ -214,30 +216,34 @@ func isWithinEpoch(currentTime time.Time) bool {
 
 // /health handler
 func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
-
 	status := GetNodeStatus(statusURL)
 	latestBlock := getLatestBlockFromNodeStatus(status)
 
 	catchingUp := status.Result.SyncInfo.CatchingUp
 	secondsSinceLastBlock := int(time.Now().UTC().Sub(latestBlock.Time).Seconds())
+	isEpoch := isWithinEpoch(time.Now())
 
-	// To test with fake epoch
-	//timsStr := "2023-01-25T13:31:46.131312500Z"
-	//t, _ := time.Parse(time.RFC3339Nano, timsStr)
-
-	t := time.Now()
-	isEpoch := isWithinEpoch(t)
-
-	healthStatus := http.StatusOK
-	healthMessage := "UP"
+	var healthStatus int
+	var healthMessage string
 
 	if catchingUp || (secondsSinceLastBlock >= 60 && !isEpoch) {
 		healthStatus = http.StatusServiceUnavailable
 		healthMessage = "DOWN"
+	} else {
+		healthStatus = http.StatusOK
+		healthMessage = "UP"
 	}
 
 	w.WriteHeader(healthStatus)
 	_, _ = io.WriteString(w, fmt.Sprintf("%s\nLatest Block %s (Received %d seconds ago)\n", healthMessage, latestBlock.Height, secondsSinceLastBlock))
+
+	log.WithFields(logrus.Fields{
+		"catchingUp":            catchingUp,
+		"secondsSinceLastBlock": secondsSinceLastBlock,
+		"isEpoch":               isEpoch,
+		"healthStatus":          healthStatus,
+		"healthMessage":         healthMessage,
+	}).Debug("Healthcheck status")
 }
 
 func setNodeEndpoints() error {
@@ -268,7 +274,7 @@ func setNodeEndpoints() error {
 			return err
 		}
 	} else {
-		log.Println("config.yaml found, using default values")
+		log.Info("config.yaml found, using default values")
 		if err := viper.Unmarshal(&config); err != nil {
 			return err
 		}
@@ -278,19 +284,17 @@ func setNodeEndpoints() error {
 }
 
 func main() {
-	fmt.Println("[ 🤖 droid starting ]")
 
-	// set config & endpoints
-	fmt.Println("setting node endpoints...")
+	log.Info("[ 🤖 droid starting ]")
 
-	err := setNodeEndpoints()
-	if err != nil {
-		panic("end points config are not set correctly")
+	log.Info("Reading configuration...")
+	if err := setNodeEndpoints(); err != nil {
+		log.Fatalf("Error reading configuration: %s", err)
 	}
-	fmt.Println("RPC: ", config.RPCEndpoint)
-	fmt.Println("LCD: ", config.LCDEndpoint)
+	log.Infof("RPC: %s", config.RPCEndpoint)
+	log.Infof("LCD: %s", config.LCDEndpoint)
 
-	fmt.Printf("listening on port %d...\n", 8080)
+	log.Infof("listening on port %s...", ":8080")
 
 	http.HandleFunc("/node_id", getNodeIDHandler)
 	http.HandleFunc("/pub_key", getPubKeyHandler)
@@ -298,8 +302,7 @@ func main() {
 	http.HandleFunc("/height", getLatestBlockHeightHandler)
 	http.HandleFunc("/health", healthcheckHandler)
 
-	err = http.ListenAndServe(":8080", nil)
-	if err != nil {
+	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatalf("Fail to start server, %s\n", err)
 	}
 }
