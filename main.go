@@ -14,58 +14,10 @@ import (
 )
 
 var (
-	config    Config
-	statusURL = config.RPCEndpoint + "/status"
-	epochURL  = config.LCDEndpoint + "/osmosis/epochs/v1beta1/epochs"
+	config    Config = DefaultConfig()
+	statusURL        = config.RPCEndpoint + "/status"
+	epochURL         = config.LCDEndpoint + "/osmosis/epochs/v1beta1/epochs"
 )
-
-type Config struct {
-	RPCEndpoint string `mapstructure:"RPC_ENDPOINT"`
-	LCDEndpoint string `mapstructure:"LCD_ENDPOINT"`
-}
-
-type NodeStatus struct {
-	Result Result `json:"result"`
-}
-
-type Result struct {
-	NodeInfo      NodeInfo      `json:"node_info"`
-	SyncInfo      SyncInfo      `json:"sync_info"`
-	ValidatorInfo ValidatorInfo `json:"validator_info"`
-}
-
-type SyncInfo struct {
-	LatestAppHash       string    `json:"latest_app_hash"`
-	LatestBlockHash     string    `json:"latest_block_hash"`
-	LatestBlockHeight   string    `json:"latest_block_height"`
-	LatestBlockTime     time.Time `json:"latest_block_time"`
-	EarliestBlockHash   string    `json:"earliest_block_hash"`
-	EarliestAppHash     string    `json:"earliest_app_hash"`
-	EarliestBlockHeight string    `json:"earliest_block_height"`
-	EarliestBlockTime   time.Time `json:"earliest_block_time"`
-	CatchingUp          bool      `json:"catching_up"`
-}
-
-type NodeInfo struct {
-	ID      string `json:"id"`
-	Network string `json:"network"`
-}
-
-type ValidatorInfo struct {
-	Address string `json:"address"`
-	PubKey  PubKey `json:"pub_key"`
-}
-
-type PubKey struct {
-	Type  string `json:"type"`
-	Value string `json:"value"`
-}
-
-type Block struct {
-	Hash   string    `json:"hash"`
-	Height string    `json:"height"`
-	Time   time.Time `json:"time"`
-}
 
 var log = logrus.New()
 
@@ -246,7 +198,7 @@ func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	}).Debug("Healthcheck status")
 }
 
-func setNodeEndpoints() error {
+func readConfig() error {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
@@ -256,25 +208,23 @@ func setNodeEndpoints() error {
 	if err := viper.ReadInConfig(); err != nil {
 		// If the configuration file is not found, create a default one
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			config = Config{
-				RPCEndpoint: "http://0.0.0.0:26657",
-				LCDEndpoint: "http://0.0.0.0:1317",
-			}
+			config = DefaultConfig()
 
 			f, err := os.Create(filepath.Join(viper.GetString("config_dir"), "config.yaml"))
 			if err != nil {
 				return err
 			}
+
 			defer f.Close()
 
-			if err := viper.WriteConfigAs(f); err != nil {
+			if err := viper.WriteConfigAs(viper.ConfigFileUsed()); err != nil {
 				return err
 			}
+
 		} else {
 			return err
 		}
 	} else {
-		log.Info("config.yaml found, using default values")
 		if err := viper.Unmarshal(&config); err != nil {
 			return err
 		}
@@ -287,14 +237,14 @@ func main() {
 
 	log.Info("[ 🤖 droid starting ]")
 
-	log.Info("Reading configuration...")
-	if err := setNodeEndpoints(); err != nil {
+	log.Info("Reading configuration.")
+	if err := readConfig(); err != nil {
 		log.Fatalf("Error reading configuration: %s", err)
 	}
-	log.Infof("RPC: %s", config.RPCEndpoint)
-	log.Infof("LCD: %s", config.LCDEndpoint)
+	log.Infof("\tRPC: %s", config.RPCEndpoint)
+	log.Infof("\tLCD: %s", config.LCDEndpoint)
 
-	log.Infof("listening on port %s...", ":8080")
+	log.Infof("Listening on port %s...", ":8080")
 
 	http.HandleFunc("/node_id", getNodeIDHandler)
 	http.HandleFunc("/pub_key", getPubKeyHandler)
