@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"path/filepath"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -13,9 +12,9 @@ import (
 )
 
 var (
-	config    Config = DefaultConfig()
-	statusURL        = config.RPCEndpoint + "/status"
-	epochURL         = config.LCDEndpoint + "/osmosis/epochs/v1beta1/epochs"
+	config    Config
+	statusURL = config.RPCEndpoint + "/status"
+	epochURL  = config.LCDEndpoint + "/osmosis/epochs/v1beta1/epochs"
 )
 
 var log = logrus.New()
@@ -198,28 +197,22 @@ func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func readConfig() error {
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("$HOME/.droid")
+	// viper.SetConfigName("config")
+	// viper.SetConfigType("yaml")
+	// viper.AddConfigPath(".")
+	// viper.AddConfigPath("$HOME/.droid")
 	viper.AutomaticEnv()
 
-	if err := viper.ReadInConfig(); err != nil {
-		// If the configuration file is not found, create a default one
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			config = DefaultConfig()
-
-			if err := viper.WriteConfigAs(filepath.Join(viper.GetString("config_dir"), "config.yaml")); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-	} else {
-		if err := viper.Unmarshal(&config); err != nil {
-			return err
-		}
+	if err := viper.BindEnv("RPCEndpoint", "RPC_ENDPOINT"); err != nil {
+		return err
 	}
+
+	if err := viper.BindEnv("LCDEndpoint", "LCD_ENDPOINT"); err != nil {
+		return err
+	}
+
+	config.RPCEndpoint = viper.GetString("RPCEndpoint")
+	config.LCDEndpoint = viper.GetString("LCDEndpoint")
 
 	return nil
 }
