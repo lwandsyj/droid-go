@@ -48,11 +48,14 @@ Open a web browser and go to http://localhost:8080/node_id to retrieve the node 
 
 ### Endpoints
 
-- `/node_id`: Retrieve the node ID.
-- `/pub_key`: Retrieve the public key of the node.
-- `/block`: Retrieve the latest block.
-- `/height`: Retrieve the latest block height.
-- `/health`: Retrieve the health status of the node.
+| Endpoint   | Description                             |
+|------------|-----------------------------------------|
+| `/node_id` | Retrieve the node ID.                   |
+| `/pub_key` | Retrieve the public key of the node.    |
+| `/block`   | Retrieve the latest block.              |
+| `/height`  | Retrieve the latest block height.       |
+| `/health`  | Retrieve the health status of the node. |
+
 
 ### Configuration
 
