@@ -1,0 +1,9 @@
+version: "3"
+services:
+  droid:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      RPC_ENDPOINT: "http://0.0.0.0:26657"
+      LCD_ENDPOINT: "http://0.0.0.0:1317"
