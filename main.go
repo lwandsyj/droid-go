@@ -6,6 +6,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/spf13/viper"
@@ -241,18 +243,37 @@ func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 func setNodeEndpoints() error {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath("./")
-	err := viper.ReadInConfig()
-	if err != nil {
-		return err
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("$HOME/.droid")
+	viper.AutomaticEnv()
+
+	if err := viper.ReadInConfig(); err != nil {
+		// If the configuration file is not found, create a default one
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			config = Config{
+				RPCEndpoint: "http://0.0.0.0:26657",
+				LCDEndpoint: "http://0.0.0.0:1317",
+			}
+
+			f, err := os.Create(filepath.Join(viper.GetString("config_dir"), "config.yaml"))
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+
+			if err := viper.WriteConfigAs(f); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	} else {
+		log.Println("config.yaml found, using default values")
+		if err := viper.Unmarshal(&config); err != nil {
+			return err
+		}
 	}
 
-	configUnmarshalled := Config{}
-	err = viper.Unmarshal(&configUnmarshalled)
-	if err != nil {
-		return err
-	}
-	config = configUnmarshalled
 	return nil
 }
 
@@ -261,12 +282,13 @@ func main() {
 
 	// set config & endpoints
 	fmt.Println("setting node endpoints...")
+
 	err := setNodeEndpoints()
 	if err != nil {
 		panic("end points config are not set correctly")
 	}
-	fmt.Println("RPC end point: ", config.RPCEndpoint)
-	fmt.Println("LCD end point: ", config.LCDEndpoint)
+	fmt.Println("RPC: ", config.RPCEndpoint)
+	fmt.Println("LCD: ", config.LCDEndpoint)
 
 	fmt.Printf("listening on port %d...\n", 8080)
 
