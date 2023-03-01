@@ -10,12 +10,13 @@ It allows you to retrieve the node ID, public key, latest block, latest block he
 
 ## Table of Contents
 
+- [Droid](#droid)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Endpoints](#endpoints)
-- [Configuration](#configuration)
-- [Contribute](#contribute)
+  * [Endpoints](#endpoints)
+  * [Configuration](#configuration)
+- [Contributing](#contributing)
 
 ## Requirements
 
