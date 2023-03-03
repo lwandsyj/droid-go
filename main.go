@@ -227,8 +227,10 @@ func main() {
 	}
 	log.Infof("RPC: %s", config.RPCEndpoint)
 	log.Infof("LCD: %s", config.LCDEndpoint)
-
 	log.Infof("Listening on port %s...", ":8080")
+
+	statusURL = config.RPCEndpoint + "/status"
+	epochURL = config.LCDEndpoint + "/osmosis/epochs/v1beta1/epochs"
 
 	http.HandleFunc("/node_id", getNodeIDHandler)
 	http.HandleFunc("/pub_key", getPubKeyHandler)
