@@ -20,18 +20,25 @@ var (
 var log = logrus.New()
 
 func GetNodeStatus(statusURL string) NodeStatus {
-	resp, err := http.Get(statusURL)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	defer resp.Body.Close()
 	var nodeStatus NodeStatus
-	if err := json.NewDecoder(resp.Body).Decode(&nodeStatus); err != nil {
-		log.Fatalln(err)
-	}
+	var err error
 
-	return nodeStatus
+	for i := 0; i < 12; i++ { // Retry for up to 1 minute (12 * 5 seconds)
+		resp, err := http.Get(statusURL)
+		if err == nil {
+			defer resp.Body.Close()
+			if err := json.NewDecoder(resp.Body).Decode(&nodeStatus); err == nil {
+				return nodeStatus
+			}
+		}
+		if i < 11 {
+			// If this is not the last retry, wait for 5 seconds before retrying
+			time.Sleep(5 * time.Second)
+		}
+	}
+	// If all retries fail, return empty node status
+	log.Fatalln(err)
+	return NodeStatus{}
 }
 
 func getLatestBlockFromNodeStatus(status NodeStatus) Block {
@@ -69,7 +76,6 @@ func getLatestBlockHeightHandler(w http.ResponseWriter, r *http.Request) {
 
 // /node_id handler
 func getNodeIDHandler(w http.ResponseWriter, r *http.Request) {
-
 	status := GetNodeStatus(statusURL)
 	_, _ = io.WriteString(w, status.Result.NodeInfo.ID)
 }
