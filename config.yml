@@ -1,2 +1,2 @@
-RPC_ENDPOINT: http://0.0.0.0:26657
-LCD_ENDPOINT: http://0.0.0.0:1317
+rpc_endpoint: http://0.0.0.0:26659
+lcd_endpoint: http://0.0.0.0:1317

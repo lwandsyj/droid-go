@@ -62,13 +62,13 @@ Open a web browser and go to http://localhost:8080/node_id to retrieve the node 
 By default, the application will look for a `config.yaml` file in the current directory and in the `$HOME/.droid` directory. The file should contain the following structure:
 
 ```yaml
-RPC_ENDPOINT: http://0.0.0.0:26657
-LCD_ENDPOINT: http://0.0.0.0:1317
+rpc_endpoint: http://0.0.0.0:26657
+lcd_endpoint: http://0.0.0.0:1317
 ```
 
 If the `config.yaml` file is not found, the application will create a default one with the above values.
 
-Alternatively, you can specify the endpoint values using environment variables. To do so, set the `RPC_ENDPOINT` and `LCD_ENDPOINT` environment variables with the desired values before running the application. The environment variable values will take precedence over any values in the `config.yaml` file. If the file does not exist, a default one will be created.
+Alternatively, you can specify the endpoint values using environment variables. To do so, set the `rpc_endpoint` and `lcd_endpoint` environment variables with the desired values before running the application. The environment variable values will take precedence over any values in the `config.yaml` file. If the file does not exist, a default one will be created.
 
 ## Contributing
 

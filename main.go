@@ -32,10 +32,12 @@ func GetNodeStatus(statusURL string) NodeStatus {
 			}
 		}
 		if i < 11 {
+			log.Info("node connection refused...retrying...")
 			// If this is not the last retry, wait for 5 seconds before retrying
 			time.Sleep(5 * time.Second)
 		}
 	}
+	log.Info("node refused to connect for 1 minute...exiting program")
 	// If all retries fail, return empty node status
 	log.Fatalln(err)
 	return NodeStatus{}
@@ -203,23 +205,26 @@ func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func readConfig() error {
-	// viper.SetConfigName("config")
-	// viper.SetConfigType("yaml")
-	// viper.AddConfigPath(".")
-	// viper.AddConfigPath("$HOME/.droid")
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("$HOME/.droid")
 	viper.AutomaticEnv()
 
-	if err := viper.BindEnv("RPCEndpoint", "RPC_ENDPOINT"); err != nil {
+	if err := viper.BindEnv("rpc_endpoint", "RPC_ENDPOINT"); err != nil {
 		return err
 	}
 
-	if err := viper.BindEnv("LCDEndpoint", "LCD_ENDPOINT"); err != nil {
+	if err := viper.BindEnv("lcd_endpoint", "LCD_ENDPOINT"); err != nil {
 		return err
 	}
 
-	config.RPCEndpoint = viper.GetString("RPCEndpoint")
-	config.LCDEndpoint = viper.GetString("LCDEndpoint")
+	if err := viper.ReadInConfig(); err != nil {
+		return fmt.Errorf("Error reading config file: %s", err)
+	}
 
+	config.RPCEndpoint = viper.GetString("rpc_endpoint")
+	config.LCDEndpoint = viper.GetString("lcd_endpoint")
 	return nil
 }
 
