@@ -23,7 +23,7 @@ func GetNodeStatus(statusURL string) NodeStatus {
 	var nodeStatus NodeStatus
 	var err error
 
-	for i := 0; i < 12; i++ { // Retry for up to 1 minute (12 * 5 seconds)
+	for i := 0; i < 48; i++ { // Retry for up to 4 minute (48 * 5 seconds)
 		resp, err := http.Get(statusURL)
 		if err == nil {
 			defer resp.Body.Close()
@@ -37,7 +37,7 @@ func GetNodeStatus(statusURL string) NodeStatus {
 			time.Sleep(5 * time.Second)
 		}
 	}
-	log.Info("node refused to connect for 1 minute...exiting program")
+	log.Info("node refused to connect for 4 minute...exiting program")
 	// If all retries fail, return empty node status
 	log.Fatalln(err)
 	return NodeStatus{}
