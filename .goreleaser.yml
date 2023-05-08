@@ -1,0 +1,48 @@
+# .goreleaser.yaml
+
+project_name: droid
+before:
+  hooks:
+    - go mod download
+    - go generate ./...
+builds:
+  - id: "droid"
+    main: "./main.go"
+    binary: "droid"
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+archives:
+  - id: "myproject"
+    format_overrides:
+      - goos: windows
+        format: zip
+    replacements:
+      darwin: macOS
+      linux: Linux
+      windows: Windows
+      amd64: x64
+      arm64: ARM64
+    files:
+      - LICENSE
+      - README.md
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-SNAPSHOT-{{ .Commit }}"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - '^refactor:'
+      - '^style:'
+      - '^perf:'
