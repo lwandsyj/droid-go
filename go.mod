@@ -1,6 +1,6 @@
 module github.com/osmosis-labs/droid
 
-go 1.19
+go 1.20
 
 require github.com/spf13/viper v1.15.0
 
