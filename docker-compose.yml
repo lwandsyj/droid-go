@@ -1,6 +1,8 @@
 version: "3"
+
 services:
   droid:
+    container_name: droid
     build: .
     ports:
       - "8080:8080"

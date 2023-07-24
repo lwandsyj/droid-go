@@ -230,7 +230,7 @@ func readConfig() error {
 
 func main() {
 
-	log.Info("[ 🤖 droid starting ]")
+	log.Info("🤖 droid is starting..")
 
 	log.Info("Reading configuration.")
 	if err := readConfig(); err != nil {

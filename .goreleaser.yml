@@ -1,0 +1,59 @@
+project_name: droid
+
+env:
+  - CGO_ENABLED=0
+
+builds:
+  - id: droid
+    binary: droid
+    flags:
+      - -mod=readonly
+      - -trimpath
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s 
+      - -w 
+      - -X main.version={{.Version}} 
+      - -X main.commit={{.Commit}} 
+      - -X main.date={{.Date}}
+
+archives:
+  - id: zipped
+    builds:
+      - droid
+    name_template: "{{.ProjectName}}-{{.Os}}-{{.Arch}}"
+    format: tar.gz
+    files:
+      - none*
+  - id: binaries
+    builds:
+      - droid
+    name_template: "{{.ProjectName}}-{{.Os}}-{{.Arch}}"
+    format: binary
+    files:
+      - none*
+
+release:
+  github:
+    owner: osmosis-labs
+    name: droid
+  header: |
+    < DESCRIPTION OF RELEASE >
+  footer: |
+    ````
+    ## 🐳 Docker
+
+    The following Docker images are available in our registry:
+
+    | Image                           | Tag            |
+    |---------------------------------|----------------|
+    | `osmolabs/droid:{{ .Version }}` | {{ .Version }} |
+
+  name_template: "droid v{{.Version}} 🤖"
+  mode: replace
+  draft: true
