@@ -1,48 +1,59 @@
-# .goreleaser.yaml
-
 project_name: droid
-before:
-  hooks:
-    - go mod download
-    - go generate ./...
+
+env:
+  - CGO_ENABLED=0
+
 builds:
-  - id: "droid"
-    main: "./main.go"
-    binary: "droid"
+  - id: droid
+    binary: droid
+    flags:
+      - -mod=readonly
+      - -trimpath
     goos:
       - linux
       - darwin
-      - windows
     goarch:
       - amd64
       - arm64
     ldflags:
-      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+      - -s 
+      - -w 
+      - -X main.version={{.Version}} 
+      - -X main.commit={{.Commit}} 
+      - -X main.date={{.Date}}
+
 archives:
-  - id: "myproject"
-    format_overrides:
-      - goos: windows
-        format: zip
-    replacements:
-      darwin: macOS
-      linux: Linux
-      windows: Windows
-      amd64: x64
-      arm64: ARM64
+  - id: zipped
+    builds:
+      - droid
+    name_template: "{{.ProjectName}}-{{.Os}}-{{.Arch}}"
+    format: tar.gz
     files:
-      - LICENSE
-      - README.md
-checksum:
-  name_template: 'checksums.txt'
-snapshot:
-  name_template: "{{ .Tag }}-SNAPSHOT-{{ .Commit }}"
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - '^docs:'
-      - '^test:'
-      - '^chore:'
-      - '^refactor:'
-      - '^style:'
-      - '^perf:'
+      - none*
+  - id: binaries
+    builds:
+      - droid
+    name_template: "{{.ProjectName}}-{{.Os}}-{{.Arch}}"
+    format: binary
+    files:
+      - none*
+
+release:
+  github:
+    owner: osmosis-labs
+    name: droid
+  header: |
+    < DESCRIPTION OF RELEASE >
+  footer: |
+    ````
+    ## 🐳 Docker
+
+    The following Docker images are available in our registry:
+
+    | Image                           | Tag            |
+    |---------------------------------|----------------|
+    | `osmolabs/droid:{{ .Version }}` | {{ .Version }} |
+
+  name_template: "droid v{{.Version}} 🤖"
+  mode: replace
+  draft: true
